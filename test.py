@@ -51,7 +51,7 @@ class Counter:
         self.df_precki = df_precki
 
     def count_precki(self):
-        # Normalize phone numbers
+        # normalize
         df_temp = self.df_precki.copy()
         df_temp['телефонски број'] = (
             df_temp['Контакт']
@@ -60,7 +60,7 @@ class Counter:
             .str.strip()
         )
         
-        # Group by normalized phone: count & get first LineID
+        # group
         result = (
             df_temp
             .groupby('телефонски број')
@@ -120,7 +120,7 @@ def styling():
     }
     workbook = load_workbook('fajlovi/prechki_povici_combined.xlsx')
     sheet = workbook.active
-    # Get header row (assuming row 1)
+    # get headerr
     header = [cell.value for cell in sheet[1]]
     for col_name, width in column_widths.items():
         if col_name in header:
@@ -144,7 +144,7 @@ def create_report(df_povici, df_precki):
         .query('`број на повици во контакт центар` > 1')
     )
     
-    # Reorder columns: LineID first, then телефонски број, then counts
+    # promena na redosled na koloni
     merged = merged[['LineID', 'телефонски број', 'отворени пречки', 'број на повици во контакт центар']]
 
     print('Combined counts (prechki + povici):')
@@ -161,7 +161,7 @@ def main():
     final_df = create_report(df_povici, df_precki)
     styling()
     
-    # Create CINUMS file with IDs
+    # cinums file
     cinums_df = pd.DataFrame({'CINUMS': final_df['LineID']})
     cinums_df.to_excel('fajlovi/CINUMS.xlsx', index=False)
     

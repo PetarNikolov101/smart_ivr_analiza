@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 def read_excel_create_dfs():
-    month1_povici = pd.read_excel('fajlovi/povici_januari.xlsx', header = 2)
-    month2_povici = pd.read_excel('fajlovi/povici_fevruari.xlsx', header = 2)
+    month1_povici = pd.read_excel('fajlovi/povici_januari.xlsx')
+    month2_povici = pd.read_excel('fajlovi/povici_fevruari.xlsx')
     # month3_povici = pd.read_excel('fajlovi/povici_mart.xlsx')
 
     month1_prechki = pd.read_excel('fajlovi/prechki_januari.xlsx')
@@ -160,6 +160,11 @@ def main():
 
     final_df = create_report(df_povici, df_precki)
     styling()
+    
+    # Create CINUMS file with IDs
+    cinums_df = pd.DataFrame({'CINUMS': final_df['LineID']})
+    cinums_df.to_excel('fajlovi/CINUMS.xlsx', index=False)
+    
     histogram_obj = Histogram(final_df)
     histogram_obj.scatter_plot()
 

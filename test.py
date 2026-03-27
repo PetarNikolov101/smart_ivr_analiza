@@ -51,16 +51,26 @@ class Counter:
         self.df_precki = df_precki
 
     def count_precki(self):
-        df = (
-            self.df_precki['Контакт']
+        # Normalize phone numbers
+        df_temp = self.df_precki.copy()
+        df_temp['телефонски број'] = (
+            df_temp['Контакт']
             .astype(str)
             .str.replace(r'\.0$', '', regex=True)
             .str.strip()
-            .value_counts()
-            .reset_index()
         )
-        df.columns = ['телефонски број', 'отворени пречки']
-        return df
+        
+        # Group by normalized phone: count & get first LineID
+        result = (
+            df_temp
+            .groupby('телефонски број')
+            .agg({'LineID': 'first', 'Контакт': 'size'})
+            .reset_index()
+            .rename(columns={'Контакт': 'отворени пречки'})
+        )
+        
+        result = result[['LineID', 'телефонски број', 'отворени пречки']]
+        return result
 
     def count_povici(self):
         column = 'TBP_ANI (Case) (Old Value)'
@@ -78,8 +88,6 @@ class Counter:
         df.columns = ['телефонски број', 'број на повици во контакт центар']
         return df
 
-    def count_povici_za_povtoreni(self, id):
-        self.x = 0
 
 class Histogram:
     def __init__(self, final_df):
@@ -105,6 +113,7 @@ class Histogram:
 
 def styling():
     column_widths = {
+        'LineID': 15,
         'телефонски број': 30,
         'отворени пречки': 30,
         'број на повици во контакт центар': 40
@@ -134,6 +143,9 @@ def create_report(df_povici, df_precki):
         .query('`отворени пречки` > 0')
         .query('`број на повици во контакт центар` > 1')
     )
+    
+    # Reorder columns: LineID first, then телефонски број, then counts
+    merged = merged[['LineID', 'телефонски број', 'отворени пречки', 'број на повици во контакт центар']]
 
     print('Combined counts (prechki + povici):')
     print(merged)

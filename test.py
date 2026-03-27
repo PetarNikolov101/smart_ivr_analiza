@@ -16,6 +16,8 @@ class ExcelWorker:
         month2_prechki = pd.read_excel('fajlovi/prechki_fevruari.xlsx')
         # month3_precki = pd.read_excel('fajlovi/preciki_mart.xlsx')
 
+        ffth_ready = pd.read_excel('fajlovi/FTTH_Ready.xlsx')
+
         lista_povici = [month1_povici, month2_povici]
         self.df_povici = pd.concat(lista_povici, ignore_index=True)
 
@@ -47,6 +49,13 @@ class ExcelWorker:
 
         return self.df_povici, self.df_precki
 
+    def remove_FTTH_ready(self):
+        print("Removing FTTH Ready...")
+        ffth_ready = pd.read_excel('fajlovi/FTTH_Ready.xlsx')
+        ffth_ready['CINUMS'] = ffth_ready['CINUMS'].astype(str).str.strip()
+        self.df_precki['LineID'] = self.df_precki['LineID'].astype(str).str.strip()
+        self.df_precki = self.df_precki[~self.df_precki['LineID'].isin(ffth_ready['CINUMS'])]
+
     def styling(self):
         print("Styling Excel...")
         column_widths = {
@@ -55,6 +64,7 @@ class ExcelWorker:
             'отворени пречки': 30,
             'број на повици во контакт центар': 40
         }
+
         workbook = load_workbook('fajlovi/prechki_povici_combined.xlsx')
         sheet = workbook.active
         # get headerr
@@ -65,6 +75,24 @@ class ExcelWorker:
                 col_letter = openpyxl.utils.get_column_letter(col_idx)
                 sheet.column_dimensions[col_letter].width = width
         workbook.save('fajlovi/prechki_povici_combined.xlsx')
+
+        workbook = load_workbook('fajlovi/CINUMS.xlsx')
+        sheet = workbook.active
+        cinums_width = 20
+
+        reason_code_width = 30
+
+        header = [cell.value for cell in sheet[1]]
+        if 'CINUMS' in header:
+            col_idx = header.index('CINUMS') + 1
+            col_letter = openpyxl.utils.get_column_letter(col_idx)
+            sheet.column_dimensions[col_letter].width = cinums_width
+        if 'Reason Code' in header:
+            col_idx = header.index('Reason Code')
+            col_letter = openpyxl.utils.get_column_letter(col_idx)
+            sheet.column_dimensions[col_letter].width = reason_code_width
+
+        workbook.save('fajlovi/CINUMS.xlsx')
 
     def create_report(self):
         print("Creating report...")
@@ -162,11 +190,15 @@ def main():
     excel_obj = ExcelWorker()
     print("Starting analysis...")
     excel_obj.read_excel_create_dfs()
+    print("Removing FTTH Ready entries...")
+    excel_obj.remove_FTTH_ready()
     final_df = excel_obj.create_report()
     excel_obj.styling()
     
-    # cinums file
-    cinums_df = pd.DataFrame({'CINUMS': final_df['LineID']})
+    cinums_df = pd.DataFrame({
+        'CINUMS': final_df['LineID'],
+        'Reason Code': 'RepeatedTCCAgent'
+    })
     cinums_df.to_excel('fajlovi/CINUMS.xlsx', index=False)
     
     histogram_obj = Histogram(final_df)

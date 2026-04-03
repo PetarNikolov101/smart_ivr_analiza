@@ -10,18 +10,17 @@ class ExcelWorker:
         print("Reading Excel...")
         month1_povici = pd.read_excel('fajlovi/povici_januari.xlsx')
         month2_povici = pd.read_excel('fajlovi/povici_fevruari.xlsx')
-        # month3_povici = pd.read_excel('fajlovi/povici_mart.xlsx')
+        month3_povici = pd.read_excel('fajlovi/povici_mart.xlsx')
 
         month1_prechki = pd.read_excel('fajlovi/prechki_januari.xlsx')
         month2_prechki = pd.read_excel('fajlovi/prechki_fevruari.xlsx')
-        # month3_precki = pd.read_excel('fajlovi/preciki_mart.xlsx')
+        month3_precki = pd.read_excel('fajlovi/prechki_mart.xlsx')
 
-        ffth_ready = pd.read_excel('fajlovi/FTTH_Ready.xlsx')
 
-        lista_povici = [month1_povici, month2_povici]
+        lista_povici = [month1_povici, month2_povici, month3_povici]
         self.df_povici = pd.concat(lista_povici, ignore_index=True)
 
-        lista_precki = [month1_prechki, month2_prechki]
+        lista_precki = [month1_prechki, month2_prechki, month3_precki]
         self.df_precki = pd.concat(lista_precki, ignore_index=True)
 
         self.df_precki["Тип на пречката"] = (

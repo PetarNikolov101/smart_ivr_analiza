@@ -33,7 +33,7 @@ class ExcelWorker:
         self.df_precki["Status nalog"] = self.df_precki["Status nalog"].astype(str).str.strip().str.lower()
 
         self.df_precki = self.df_precki[
-        # (self.df_precki["Satus nalog"] != "откажан") &
+            (self.df_precki["Status nalog"] != "откажан") &
             (self.df_precki["Тип на пречката"] != "network facing") &
             (self.df_precki["Класификација"] != "WHOLESALE") &
             (self.df_precki["Класификација"] != "MOBILE  POSTPAID") &
@@ -46,6 +46,10 @@ class ExcelWorker:
 
         self.df_precki.to_excel('fajlovi/prechki_combined.xlsx', index=False)
 
+        self.df_povici = self.df_povici[
+            (self.df_povici["Direction"] == "Inbound")
+        ]
+
         return self.df_povici, self.df_precki
 
     def remove_FTTH_ready(self):
@@ -54,6 +58,13 @@ class ExcelWorker:
         ffth_ready['CINUMS'] = ffth_ready['CINUMS'].astype(str).str.strip()
         self.df_precki['LineID'] = self.df_precki['LineID'].astype(str).str.strip()
         self.df_precki = self.df_precki[~self.df_precki['LineID'].isin(ffth_ready['CINUMS'])]
+    
+    def remove_slabi_linii(self):
+        print("Removing weak lines...")
+        slabi_linii = pd.read_excel('fajlovi/Slabi_Linii.xlsx', header=8)
+        slabi_linii["Row Labels"] = slabi_linii["Row Labels"].astype(str).str.strip()
+        self.df_precki['LineID'] = self.df_precki['LineID'].astype(str).str.strip()
+        self.df_precki = self.df_precki[~self.df_precki['LineID'].isin(slabi_linii['Row Labels'])]
 
     def styling(self):
         print("Styling Excel...")
@@ -191,6 +202,7 @@ def main():
     excel_obj.read_excel_create_dfs()
     print("Removing FTTH Ready entries...")
     excel_obj.remove_FTTH_ready()
+    excel_obj.remove_slabi_linii()
     final_df = excel_obj.create_report()
     excel_obj.styling()
     

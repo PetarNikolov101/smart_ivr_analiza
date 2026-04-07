@@ -59,12 +59,13 @@ class ExcelWorker:
         self.df_precki['LineID'] = self.df_precki['LineID'].astype(str).str.strip()
         self.df_precki = self.df_precki[~self.df_precki['LineID'].isin(ffth_ready['CINUMS'])]
     
-    def remove_slabi_linii(self):
-        print("Removing weak lines...")
+    def mark_slabi_linii(self):
+        print("Marking weak lines...")
         slabi_linii = pd.read_excel('fajlovi/Slabi_Linii.xlsx', header=8)
         slabi_linii["Row Labels"] = slabi_linii["Row Labels"].astype(str).str.strip()
         self.df_precki['LineID'] = self.df_precki['LineID'].astype(str).str.strip()
-        self.df_precki = self.df_precki[~self.df_precki['LineID'].isin(slabi_linii['Row Labels'])]
+       #add a column at the end of the table with "Slabi Linii", if it's found in the slabi_linii, mark it as "Yes", if not, mark it as "No"
+        self.df_precki['слаба линија'] = self.df_precki['LineID'].apply(lambda x: 'Да' if x in slabi_linii['Row Labels'].values else 'Не')
 
     def styling(self):
         print("Styling Excel...")
@@ -72,7 +73,8 @@ class ExcelWorker:
             'LineID': 15,
             'телефонски број': 30,
             'отворени пречки': 30,
-            'број на повици во контакт центар': 40
+            'број на повици во контакт центар': 40,
+            'слаба линија': 20
         }
 
         workbook = load_workbook('fajlovi/prechki_povici_combined.xlsx')
@@ -121,7 +123,7 @@ class ExcelWorker:
         )
         
         # promena na redosled na koloni
-        merged = merged[['LineID', 'телефонски број', 'отворени пречки', 'број на повици во контакт центар']]
+        merged = merged[['LineID', 'телефонски број', 'отворени пречки', 'број на повици во контакт центар', 'слаба линија']]
 
         merged.to_excel('fajlovi/prechki_povici_combined.xlsx', index=False)
         final_df = pd.read_excel('fajlovi/prechki_povici_combined.xlsx')
@@ -148,12 +150,12 @@ class Counter:
         result = (
             df_temp
             .groupby('телефонски број')
-            .agg({'LineID': 'first', 'Контакт': 'size'})
+            .agg({'LineID': 'first', 'Контакт': 'size', 'слаба линија': 'first'})
             .reset_index()
             .rename(columns={'Контакт': 'отворени пречки'})
         )
         
-        result = result[['LineID', 'телефонски број', 'отворени пречки']]
+        result = result[['LineID', 'телефонски број', 'отворени пречки', 'слаба линија']]
         return result
 
     def count_povici(self):
@@ -202,12 +204,13 @@ def main():
     excel_obj.read_excel_create_dfs()
     print("Removing FTTH Ready entries...")
     excel_obj.remove_FTTH_ready()
-    excel_obj.remove_slabi_linii()
+    excel_obj.mark_slabi_linii()
     final_df = excel_obj.create_report()
     excel_obj.styling()
     
+    filtered_df = final_df[(final_df['отворени пречки'] >= 2) & (final_df['слаба линија'] != 'Да')]
     cinums_df = pd.DataFrame({
-        'CINUMS': final_df['LineID'],
+        'CINUMS': filtered_df['LineID'],
         'Reason Code': 'RepeatedTCCAgent'
     })
     cinums_df.to_excel('fajlovi/CINUMS.xlsx', index=False)
